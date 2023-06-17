@@ -1,0 +1,9 @@
+default_token: KXjk9waX9fqRLQ4t8sQf5IK94e2u1CXr8X4MscDc
+
+scripts:
+  - id: 5e5adb92-0d04-11ee-97cf-4b6c30e50f6a
+    path: ./scripts/success.sh
+  - id: c7c664c0-0d0e-11ee-a3c9-17023c4d78f3
+    path: ./scripts/failure.sh
+    token: YT9U08gqQ8yxa0Sk3PnDk6jpWu31bCyqa5SRQVFV8
+    concurrent: true
