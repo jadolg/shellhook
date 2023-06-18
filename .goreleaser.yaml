@@ -47,6 +47,7 @@ nfpms:
     contents:
       - src: ./config.yaml
         dst: /etc/shellhook/config.yaml
+        type: config|noreplace
         file_info:
           mode: 0600
       - src: ./packaging/shellhook.service
