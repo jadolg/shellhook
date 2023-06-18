@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
 	"sync"
+	"syscall"
 )
 
 func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +34,11 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 		shell := getShell(scriptToRun)
 
 		cmd := exec.Command(shell, scriptToRun.Path)
+		if scriptToRun.User != "" {
+			if handleUser(w, scriptToRun, cmd) {
+				return
+			}
+		}
 		output, err := cmd.Output()
 		if err != nil {
 			errorMsg := fmt.Sprintf("%s\n%v", output, err)
@@ -44,6 +52,30 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			log.Errorf("error responding to request %v", err)
 		}
 	}
+}
+
+func handleUser(w http.ResponseWriter, scriptToRun script, cmd *exec.Cmd) bool {
+	u, err := user.Lookup(scriptToRun.User)
+	if err != nil {
+		errorMsg := fmt.Sprintf("%v for %s", err, scriptToRun.User)
+		log.Error(errorMsg)
+		http.Error(w, errorMsg, http.StatusInternalServerError)
+	}
+	uid, err := strconv.ParseInt(u.Uid, 10, 32)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return true
+	}
+	gid, err := strconv.ParseInt(u.Gid, 10, 32)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return true
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{}
+	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+	return false
 }
 
 func getShell(scriptToRun script) string {
