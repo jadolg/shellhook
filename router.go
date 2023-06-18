@@ -41,7 +41,7 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 		}
 		output, err := cmd.Output()
 		if err != nil {
-			errorMsg := fmt.Sprintf("%s\n%v", output, err)
+			errorMsg := fmt.Sprintf("%s\n%s\n%v", output, err.(*exec.ExitError).Stderr, err)
 			log.Errorf(errorMsg)
 			http.Error(w, errorMsg, http.StatusInternalServerError)
 			return
@@ -73,8 +73,23 @@ func handleUser(w http.ResponseWriter, scriptToRun script, cmd *exec.Cmd) bool {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return true
 	}
+	groups, err := u.GroupIds()
+	if err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return true
+	}
+	groupIDs := make([]uint32, len(groups))
+	for i, group := range groups {
+		gid, err := strconv.ParseInt(group, 10, 32)
+		if err != nil {
+			log.Error(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		groupIDs[i] = uint32(gid)
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
-	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), Groups: groupIDs}
 	return false
 }
 
