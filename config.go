@@ -12,6 +12,7 @@ type script struct {
 	Token      string    `yaml:"token,omitempty"`
 	Concurrent bool      `yaml:"concurrent"`
 	Shell      string    `yaml:"shell"`
+	User       string    `yaml:"user"`
 }
 
 type configuration struct {
