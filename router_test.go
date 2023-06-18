@@ -72,7 +72,7 @@ func TestRouter(t *testing.T) {
 			configuration{DefaultToken: "test", Scripts: []script{{ID: parseUUIDOrPanic("b9f71a96-0d23-11ee-860e-ff55b106c448"), Path: "./scripts/failure.sh"}}},
 			"test",
 			http.StatusInternalServerError,
-			"ko\n\nexit status 1\n",
+			"ko\n\n\nexit status 1\n",
 		},
 		{
 			"When the hook endpoint is called with a correct script that uses its own token using the default token, it should return 401",
