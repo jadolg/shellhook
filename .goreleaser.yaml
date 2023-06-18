@@ -1,0 +1,60 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+    - goos: windows
+      format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+nfpms:
+  -
+    id: shellhook
+    package_name: shellhook
+    homepage: https://github.com/jadolg/shellhook
+    maintainer: Jorge Alberto Díaz Orozco (Akiel) <diazorozcoj@gmail.com>
+    description: |-
+      Execute shell scripts remotelly with an HTTP call
+    license: MIT
+    formats:
+      - deb
+    bindir: /usr/bin
+    section: default
+    priority: extra
+    scripts:
+      postinstall: ./packaging/postinstall.sh
+      preremove: ./packaging/preremove.sh
+    contents:
+      - src: ./config.yaml
+        dst: /etc/shellhook/config.yaml
+        file_info:
+          mode: 0600
+      - src: ./packaging/shellhook.service
+        dst: /etc/systemd/system/shellhook.service
+        file_info:
+          mode: 0600
