@@ -6,12 +6,8 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"os"
 	"os/exec"
-	"os/user"
-	"strconv"
 	"sync"
-	"syscall"
 )
 
 func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +31,11 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 
 		cmd := exec.Command(shell, scriptToRun.Path)
 		if scriptToRun.User != "" {
-			if handleUser(w, scriptToRun, cmd) {
+			err := injectUserinCmd(scriptToRun.User, cmd)
+			if err != nil {
+				errorMsg := fmt.Sprintf("%v for %s", err, scriptToRun.User)
+				log.Error(errorMsg)
+				http.Error(w, errorMsg, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -52,58 +52,6 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			log.Errorf("error responding to request %v", err)
 		}
 	}
-}
-
-func handleUser(w http.ResponseWriter, scriptToRun script, cmd *exec.Cmd) bool {
-	u, err := user.Lookup(scriptToRun.User)
-	if err != nil {
-		errorMsg := fmt.Sprintf("%v for %s", err, scriptToRun.User)
-		log.Error(errorMsg)
-		http.Error(w, errorMsg, http.StatusInternalServerError)
-	}
-	uid, err := strconv.ParseInt(u.Uid, 10, 32)
-	if err != nil {
-		log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return true
-	}
-	gid, err := strconv.ParseInt(u.Gid, 10, 32)
-	if err != nil {
-		log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return true
-	}
-	groups, err := u.GroupIds()
-	if err != nil {
-		log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return true
-	}
-	groupIDs := make([]uint32, len(groups))
-	for i, group := range groups {
-		gid, err := strconv.ParseInt(group, 10, 32)
-		if err != nil {
-			log.Error(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		groupIDs[i] = uint32(gid)
-	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{}
-	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), Groups: groupIDs}
-	return false
-}
-
-func getShell(scriptToRun script) string {
-	shell := scriptToRun.Shell
-	if shell == "" {
-		shellFromEnv, exists := os.LookupEnv("SHELL")
-		if !exists {
-			shell = "/bin/bash"
-		} else {
-			shell = shellFromEnv
-		}
-	}
-	return shell
 }
 
 func checkAuthorization(w http.ResponseWriter, r *http.Request, scriptToRun script, c configuration) bool {
