@@ -7,10 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os/exec"
-	"os/user"
-	"strconv"
 	"sync"
-	"syscall"
 )
 
 func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +31,7 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 
 		cmd := exec.Command(shell, scriptToRun.Path)
 		if scriptToRun.User != "" {
-			err := handleUser(scriptToRun, cmd)
+			err := injectUserinCmd(scriptToRun.User, cmd)
 			if err != nil {
 				errorMsg := fmt.Sprintf("%v for %s", err, scriptToRun.User)
 				log.Error(errorMsg)
@@ -55,42 +52,6 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			log.Errorf("error responding to request %v", err)
 		}
 	}
-}
-
-func handleUser(scriptToRun script, cmd *exec.Cmd) error {
-	u, err := user.Lookup(scriptToRun.User)
-	if err != nil {
-		return err
-	}
-	uid, err := strconv.ParseInt(u.Uid, 10, 32)
-	if err != nil {
-		return err
-	}
-	gid, err := strconv.ParseInt(u.Gid, 10, 32)
-	if err != nil {
-		return err
-	}
-	groups, err := u.GroupIds()
-	if err != nil {
-		return err
-	}
-	groupIDs := make([]uint32, len(groups))
-	for i, group := range groups {
-		gid, err := strconv.ParseInt(group, 10, 32)
-		if err != nil {
-			return err
-		}
-		groupIDs[i] = uint32(gid)
-	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{}
-	envForUser, err := getEnvironmentVariables(scriptToRun.User)
-	if err != nil {
-		return err
-	}
-
-	cmd.Env = append(cmd.Env, envForUser...)
-	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), Groups: groupIDs}
-	return nil
 }
 
 func checkAuthorization(w http.ResponseWriter, r *http.Request, scriptToRun script, c configuration) bool {
