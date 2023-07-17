@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os/exec"
@@ -28,7 +29,7 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 		}
 
 		shell := getShell(scriptToRun)
-
+		execsTotal.Inc()
 		cmd := exec.Command(shell, scriptToRun.Path)
 		if scriptToRun.User != "" {
 			err := injectUserinCmd(scriptToRun.User, cmd)
@@ -36,6 +37,7 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 				errorMsg := fmt.Sprintf("%v for %s", err, scriptToRun.User)
 				log.Error(errorMsg)
 				http.Error(w, errorMsg, http.StatusInternalServerError)
+				errorsTotal.Inc()
 				return
 			}
 		}
@@ -44,6 +46,7 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			errorMsg := fmt.Sprintf("%s\n%s\n%v", output, err.(*exec.ExitError).Stderr, err)
 			log.Errorf(errorMsg)
 			http.Error(w, errorMsg, http.StatusInternalServerError)
+			errorsTotal.Inc()
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -105,5 +108,6 @@ func getRouter(c configuration) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hook", executionHandler(c, locks))
 	mux.HandleFunc("/health", healthcheckHandler)
+	mux.Handle("/metrics", promhttp.Handler())
 	return mux
 }
