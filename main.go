@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -20,7 +21,7 @@ func main() {
 
 	router := getRouter(c)
 	log.Printf("Starting server on port %d", port)
-	if err := http.ListenAndServe(":9081", router); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), router); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }
