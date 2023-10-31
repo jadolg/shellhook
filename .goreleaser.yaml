@@ -34,7 +34,7 @@ nfpms:
     homepage: https://github.com/jadolg/shellhook
     maintainer: Jorge Alberto Díaz Orozco (Akiel) <diazorozcoj@gmail.com>
     description: |-
-      Execute shell scripts remotelly with an HTTP call
+      Execute shell scripts remotely with an HTTP call
     license: MIT
     formats:
       - deb
