@@ -7,3 +7,6 @@ scripts:
     path: ./scripts/failure.sh
     token: YT9U08gqQ8yxa0Sk3PnDk6jpWu31bCyqa5SRQVFV8
     concurrent: true
+  - id: 47878e38-a700-11ee-bc6d-f3d25921fcde
+    inline: |
+      echo "Hello, world!"

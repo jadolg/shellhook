@@ -34,7 +34,7 @@ func getShell(scriptToRun script) string {
 	return shell
 }
 
-func injectUserinCmd(username string, cmd *exec.Cmd) error {
+func injectUserInCmd(username string, cmd *exec.Cmd) error {
 	u, err := user.Lookup(username)
 	if err != nil {
 		return err

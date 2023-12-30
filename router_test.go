@@ -90,6 +90,14 @@ func TestRouter(t *testing.T) {
 			http.StatusOK,
 			"ok\n",
 		},
+		{
+			"When the hook endpoint is called with a script that uses inline then it should return 200",
+			"/hook?script=47878e38-a700-11ee-bc6d-f3d25921fcde",
+			configuration{DefaultToken: "test", Scripts: []script{{ID: parseUUIDOrPanic("47878e38-a700-11ee-bc6d-f3d25921fcde"), Inline: "echo inline", Token: "nonya"}}},
+			"nonya",
+			http.StatusOK,
+			"inline\n",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
