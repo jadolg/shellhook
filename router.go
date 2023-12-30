@@ -7,46 +7,66 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 	"os/exec"
 	"sync"
 )
 
 func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		scriptToRun, err, done := getScript(w, r, c)
+		scriptToRun, done := getScript(w, r, c)
 		if done {
 			return
 		}
 
-		if checkAuthorization(w, r, scriptToRun, c) {
+		if isUnauthorized(w, r, scriptToRun, c) {
 			return
 		}
 
-		log.Debugf("Executing script: %s on with path: %s", scriptToRun.ID, scriptToRun.Path)
+		if scriptToRun.Path != "" {
+			log.Infof("Executing script: %v with path: '%s'", scriptToRun.ID, scriptToRun.Path)
+		} else {
+			log.Infof("Executing script: %v with inline", scriptToRun.ID)
+		}
+
 		if !scriptToRun.Concurrent {
+			log.Debugf("Acquiring lock for script %v", scriptToRun.ID)
 			locks[scriptToRun.ID].Lock()
 			defer locks[scriptToRun.ID].Unlock()
 		}
 
 		shell := getShell(scriptToRun)
-		execsTotal.Inc()
-		cmd := exec.Command(shell, scriptToRun.Path)
-		if scriptToRun.User != "" {
-			err := injectUserinCmd(scriptToRun.User, cmd)
+		scriptPath := scriptToRun.Path
+
+		if scriptToRun.Inline != "" {
+			tempScript, err := createTemporaryScriptFromInline(scriptToRun)
 			if err != nil {
-				errorMsg := fmt.Sprintf("%v for %s", err, scriptToRun.User)
-				log.Error(errorMsg)
-				http.Error(w, errorMsg, http.StatusInternalServerError)
-				errorsTotal.Inc()
+				reportError(err, w)
+				return
+			}
+			defer func(name string) {
+				err := os.Remove(name)
+				if err != nil {
+					errorsTotal.Inc()
+					log.Error(err)
+				}
+			}(tempScript)
+
+			scriptPath = tempScript
+		}
+
+		cmd := exec.Command(shell, scriptPath)
+		if scriptToRun.User != "" {
+			err := injectUserInCmd(scriptToRun.User, cmd)
+			if err != nil {
+				reportError(fmt.Errorf("%v for %s", err, scriptToRun.User), w)
 				return
 			}
 		}
 		output, err := cmd.Output()
+		execsTotal.Inc()
 		if err != nil {
-			errorMsg := fmt.Sprintf("%s\n%s\n%v", output, err.(*exec.ExitError).Stderr, err)
-			log.Errorf(errorMsg)
-			http.Error(w, errorMsg, http.StatusInternalServerError)
-			errorsTotal.Inc()
+			reportError(fmt.Errorf("%s\n%s\n%v", output, err.(*exec.ExitError).Stderr, err), w)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -57,7 +77,28 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 	}
 }
 
-func checkAuthorization(w http.ResponseWriter, r *http.Request, scriptToRun script, c configuration) bool {
+func reportError(err error, w http.ResponseWriter) {
+	log.Error(err)
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+	errorsTotal.Inc()
+}
+
+func createTemporaryScriptFromInline(scriptToRun script) (string, error) {
+	tempScript, err := os.CreateTemp(os.TempDir(), "*-shellhook")
+
+	if err != nil {
+		return "", fmt.Errorf("error creating temporary script file %v for %s", err, scriptToRun.User)
+	}
+
+	_, err = tempScript.WriteString(scriptToRun.Inline)
+	if err != nil {
+		return "", fmt.Errorf("error writing temporary script file %v for %s", err, scriptToRun.User)
+	}
+
+	return tempScript.Name(), nil
+}
+
+func isUnauthorized(w http.ResponseWriter, r *http.Request, scriptToRun script, c configuration) bool {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		http.Error(w, "Missing authorization token", http.StatusUnauthorized)
@@ -72,12 +113,12 @@ func checkAuthorization(w http.ResponseWriter, r *http.Request, scriptToRun scri
 	return false
 }
 
-func getScript(w http.ResponseWriter, r *http.Request, c configuration) (script, error, bool) {
+func getScript(w http.ResponseWriter, r *http.Request, c configuration) (script, bool) {
 	scriptID, err := uuid.Parse(r.URL.Query().Get("script"))
 
 	if err != nil || scriptID == uuid.Nil {
 		http.Error(w, "Missing script parameter or invalid script parameter", http.StatusBadRequest)
-		return script{}, nil, true
+		return script{}, true
 	}
 
 	scriptToRun := script{}
@@ -90,9 +131,9 @@ func getScript(w http.ResponseWriter, r *http.Request, c configuration) (script,
 
 	if scriptToRun.ID == uuid.Nil {
 		http.Error(w, "Script not found", http.StatusNotFound)
-		return script{}, nil, true
+		return script{}, true
 	}
-	return scriptToRun, err, false
+	return scriptToRun, false
 }
 
 func healthcheckHandler(w http.ResponseWriter, _ *http.Request) {
