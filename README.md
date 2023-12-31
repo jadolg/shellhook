@@ -34,6 +34,9 @@ scripts:
     path: ./scripts/failure.sh
     token: YT9U08gqQ8yxa0Sk3PnDk6jpWu31bCyqa5SRQVFV8 # If specified, this token is used for authorization instead of the default one
     concurrent: true # Set this to true if your script can run concurrently (default: false)
+  - id: 47878e38-a700-11ee-bc6d-f3d25921fcde
+    inline: | # Use an inline script instead of a path to a script
+      echo "Hello, world!"
 ```
 
 ## Calling the service
