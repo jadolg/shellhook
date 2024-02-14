@@ -51,12 +51,20 @@ func TestRouter(t *testing.T) {
 			"Missing script parameter or invalid script parameter\n",
 		},
 		{
-			"When the hook endpoint is called with an on-existent script, it should return 404",
+			"When the hook endpoint is called with an non-existent script, it should return 404",
 			"/hook?script=b9f71a96-0d23-11ee-860e-ff55b106c448",
 			configuration{DefaultToken: "test"},
 			"test",
 			http.StatusNotFound,
 			"Script not found\n",
+		},
+		{
+			"When the hook endpoint is called with an non-uuid script it should return 400",
+			"/hook?script=blabla",
+			configuration{DefaultToken: "test"},
+			"test",
+			http.StatusBadRequest,
+			"Missing script parameter or invalid script parameter\n",
 		},
 		{
 			"When the hook endpoint is called with a correct script and token, it should return 200",

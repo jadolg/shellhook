@@ -116,24 +116,19 @@ func isUnauthorized(w http.ResponseWriter, r *http.Request, scriptToRun script, 
 func getScript(w http.ResponseWriter, r *http.Request, c configuration) (script, bool) {
 	scriptID, err := uuid.Parse(r.URL.Query().Get("script"))
 
-	if err != nil || scriptID == uuid.Nil {
+	if err != nil {
 		http.Error(w, "Missing script parameter or invalid script parameter", http.StatusBadRequest)
 		return script{}, true
 	}
 
-	scriptToRun := script{}
 	for _, ascript := range c.Scripts {
 		if ascript.ID == scriptID {
-			scriptToRun = ascript
-			break
+			return ascript, false
 		}
 	}
 
-	if scriptToRun.ID == uuid.Nil {
-		http.Error(w, "Script not found", http.StatusNotFound)
-		return script{}, true
-	}
-	return scriptToRun, false
+	http.Error(w, "Script not found", http.StatusNotFound)
+	return script{}, true
 }
 
 func healthcheckHandler(w http.ResponseWriter, _ *http.Request) {
