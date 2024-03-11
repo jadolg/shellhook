@@ -8,18 +8,25 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
-	"os/exec"
 	"sync"
 )
 
+type ClientError struct {
+	Message  string `json:"message"`
+	HTTPCode int    `json:"code"`
+}
+
 func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		scriptToRun, done := getScript(w, r, c)
-		if done {
+		scriptToRun, cliErr := getScript(r.URL.Query().Get("script"), c)
+		if cliErr != nil {
+			http.Error(w, cliErr.Message, cliErr.HTTPCode)
 			return
 		}
 
-		if isUnauthorized(w, r, scriptToRun, c) {
+		cliErr = checkAuthorization(r.Header.Get("Authorization"), scriptToRun, c)
+		if cliErr != nil {
+			http.Error(w, cliErr.Message, cliErr.HTTPCode)
 			return
 		}
 
@@ -35,38 +42,9 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			defer locks[scriptToRun.ID].Unlock()
 		}
 
-		shell := getShell(scriptToRun)
-		scriptPath := scriptToRun.Path
-
-		if scriptToRun.Inline != "" {
-			tempScript, err := createTemporaryScriptFromInline(scriptToRun)
-			if err != nil {
-				reportError(err, w)
-				return
-			}
-			defer func(name string) {
-				err := os.Remove(name)
-				if err != nil {
-					errorsTotal.Inc()
-					log.Error(err)
-				}
-			}(tempScript)
-
-			scriptPath = tempScript
-		}
-
-		cmd := exec.Command(shell, scriptPath)
-		if scriptToRun.User != "" {
-			err := injectUserInCmd(scriptToRun.User, cmd)
-			if err != nil {
-				reportError(fmt.Errorf("%v for %s", err, scriptToRun.User), w)
-				return
-			}
-		}
-		output, err := cmd.Output()
-		execsTotal.Inc()
+		output, err := executeScript(scriptToRun)
 		if err != nil {
-			reportError(fmt.Errorf("%s\n%s\n%v", output, err.(*exec.ExitError).Stderr, err), w)
+			reportError(err, w)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -98,37 +76,32 @@ func createTemporaryScriptFromInline(scriptToRun script) (string, error) {
 	return tempScript.Name(), nil
 }
 
-func isUnauthorized(w http.ResponseWriter, r *http.Request, scriptToRun script, c configuration) bool {
-	authHeader := r.Header.Get("Authorization")
+func checkAuthorization(authHeader string, scriptToRun script, c configuration) *ClientError {
 	if authHeader == "" {
-		http.Error(w, "Missing authorization token", http.StatusUnauthorized)
-		return true
+		return &ClientError{Message: "Missing authorization token", HTTPCode: http.StatusUnauthorized}
 	}
 
 	if (scriptToRun.Token != "" && subtle.ConstantTimeCompare([]byte(authHeader), []byte(scriptToRun.Token)) != 1) ||
 		(scriptToRun.Token == "" && subtle.ConstantTimeCompare([]byte(authHeader), []byte(c.DefaultToken)) != 1) {
-		http.Error(w, "Invalid authorization token", http.StatusUnauthorized)
-		return true
+		return &ClientError{Message: "Invalid authorization token", HTTPCode: http.StatusUnauthorized}
 	}
-	return false
+	return nil
 }
 
-func getScript(w http.ResponseWriter, r *http.Request, c configuration) (script, bool) {
-	scriptID, err := uuid.Parse(r.URL.Query().Get("script"))
+func getScript(scriptUUID string, c configuration) (script, *ClientError) {
+	scriptID, err := uuid.Parse(scriptUUID)
 
 	if err != nil {
-		http.Error(w, "Missing script parameter or invalid script parameter", http.StatusBadRequest)
-		return script{}, true
+		return script{}, &ClientError{Message: "Missing script parameter or invalid script parameter", HTTPCode: http.StatusBadRequest}
 	}
 
 	for _, ascript := range c.Scripts {
 		if ascript.ID == scriptID {
-			return ascript, false
+			return ascript, nil
 		}
 	}
 
-	http.Error(w, "Script not found", http.StatusNotFound)
-	return script{}, true
+	return script{}, &ClientError{Message: "Script not found", HTTPCode: http.StatusNotFound}
 }
 
 func healthcheckHandler(w http.ResponseWriter, _ *http.Request) {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"os/user"
@@ -8,6 +10,42 @@ import (
 	"strings"
 	"syscall"
 )
+
+func executeScript(scriptToRun script) ([]byte, error) {
+	shell := getShell(scriptToRun)
+	scriptPath := scriptToRun.Path
+
+	if scriptToRun.Inline != "" {
+		tempScript, err := createTemporaryScriptFromInline(scriptToRun)
+		if err != nil {
+			return nil, err
+		}
+		defer func(name string) {
+			err := os.Remove(name)
+			if err != nil {
+				errorsTotal.Inc()
+				log.Error(err)
+			}
+		}(tempScript)
+
+		scriptPath = tempScript
+	}
+
+	cmd := exec.Command(shell, scriptPath)
+	if scriptToRun.User != "" {
+		err := injectUserInCmd(scriptToRun.User, cmd)
+		if err != nil {
+			return nil, fmt.Errorf("%v for %s", err, scriptToRun.User)
+		}
+	}
+	output, err := cmd.Output()
+	execsTotal.Inc()
+	if err != nil {
+		return nil, fmt.Errorf("%s\n%s\n%v", output, err.(*exec.ExitError).Stderr, err)
+	}
+
+	return output, nil
+}
 
 func getEnvironmentVariables(username string) ([]string, error) {
 	cmd := exec.Command("sudo", "-Hiu", username, "env")
