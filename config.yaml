@@ -1,5 +1,9 @@
 default_token: KXjk9waX9fqRLQ4t8sQf5IK94e2u1CXr8X4MscDc
 
+environment:
+  - key: TITLE
+    value: Mr.
+
 scripts:
   - id: 5e5adb92-0d04-11ee-97cf-4b6c30e50f6a
     path: ./scripts/success.sh
@@ -10,3 +14,9 @@ scripts:
   - id: 47878e38-a700-11ee-bc6d-f3d25921fcde
     inline: |
       echo "Hello, world!"
+  - id: 34ca006a-ece6-11ee-a395-17c174ecf4c7
+    inline: |
+      echo "Hello, $TITLE $NAME!"
+    environment:
+      - key: NAME
+        value: Frodo

@@ -8,13 +8,19 @@ import (
 )
 
 type script struct {
-	ID         uuid.UUID `yaml:"id"`
-	Path       string    `yaml:"path,omitempty"`
-	Inline     string    `yaml:"inline,omitempty"`
-	Token      string    `yaml:"token,omitempty"`
-	Concurrent bool      `yaml:"concurrent"`
-	Shell      string    `yaml:"shell"`
-	User       string    `yaml:"user"`
+	ID          uuid.UUID     `yaml:"id"`
+	Path        string        `yaml:"path,omitempty"`
+	Inline      string        `yaml:"inline,omitempty"`
+	Token       string        `yaml:"token,omitempty"`
+	Concurrent  bool          `yaml:"concurrent"`
+	Shell       string        `yaml:"shell"`
+	User        string        `yaml:"user"`
+	Environment []environment `yaml:"environment"`
+}
+
+type environment struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
 }
 
 func (s script) isValid() bool {
@@ -22,8 +28,9 @@ func (s script) isValid() bool {
 }
 
 type configuration struct {
-	DefaultToken string   `yaml:"default_token"`
-	Scripts      []script `yaml:"scripts"`
+	DefaultToken string        `yaml:"default_token"`
+	Scripts      []script      `yaml:"scripts"`
+	Environment  []environment `yaml:"environment"`
 }
 
 func getConfig(configFile string) (configuration, error) {

@@ -106,6 +106,30 @@ func TestRouter(t *testing.T) {
 			http.StatusOK,
 			"inline\n",
 		},
+		{
+			"When an environment variable is specified then it should be passed to the script",
+			"/hook?script=47878e38-a700-11ee-bc6d-f3d25921fcde",
+			configuration{DefaultToken: "test", Scripts: []script{{ID: parseUUIDOrPanic("47878e38-a700-11ee-bc6d-f3d25921fcde"), Inline: "echo $NAME", Token: "nonya", Environment: []environment{{Key: "NAME", Value: "Gandalf"}}}}},
+			"nonya",
+			http.StatusOK,
+			"Gandalf\n",
+		},
+		{
+			"When a global environment variable is specified then it should be passed to the script",
+			"/hook?script=47878e38-a700-11ee-bc6d-f3d25921fcde",
+			configuration{DefaultToken: "test", Environment: []environment{{Key: "NAME", Value: "Gandalf"}}, Scripts: []script{{ID: parseUUIDOrPanic("47878e38-a700-11ee-bc6d-f3d25921fcde"), Inline: "echo $NAME", Token: "nonya"}}},
+			"nonya",
+			http.StatusOK,
+			"Gandalf\n",
+		},
+		{
+			"When the same global environment variable and script one are is specified then the script should use the script scoped one",
+			"/hook?script=47878e38-a700-11ee-bc6d-f3d25921fcde",
+			configuration{DefaultToken: "test", Environment: []environment{{Key: "NAME", Value: "Gandalf"}}, Scripts: []script{{ID: parseUUIDOrPanic("47878e38-a700-11ee-bc6d-f3d25921fcde"), Inline: "echo $NAME", Token: "nonya", Environment: []environment{{Key: "NAME", Value: "frodo"}}}}},
+			"nonya",
+			http.StatusOK,
+			"frodo\n",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"syscall"
 )
 
-func executeScript(scriptToRun script) ([]byte, error) {
+func executeScript(scriptToRun script, globalEnvironment []environment) ([]byte, error) {
 	shell := getShell(scriptToRun)
 	scriptPath := scriptToRun.Path
 
@@ -38,6 +38,9 @@ func executeScript(scriptToRun script) ([]byte, error) {
 			return nil, fmt.Errorf("%v for %s", err, scriptToRun.User)
 		}
 	}
+
+	injectEnvironmentVariables(scriptToRun.Environment, globalEnvironment, cmd)
+
 	output, err := cmd.Output()
 	execsTotal.Inc()
 	if err != nil {
@@ -45,6 +48,16 @@ func executeScript(scriptToRun script) ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+func injectEnvironmentVariables(scriptEnvironment []environment, globalEnvironment []environment, cmd *exec.Cmd) {
+	for _, env := range globalEnvironment {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", env.Key, env.Value))
+	}
+
+	for _, env := range scriptEnvironment {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", env.Key, env.Value))
+	}
 }
 
 func getEnvironmentVariables(username string) ([]string, error) {
