@@ -42,7 +42,7 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			defer locks[scriptToRun.ID].Unlock()
 		}
 
-		output, err := executeScript(scriptToRun)
+		output, err := executeScript(scriptToRun, c.Environment)
 		if err != nil {
 			reportError(err, w)
 			return
