@@ -4,7 +4,7 @@ After=syslog.target network.target
 
 [Service]
 User=root
-ExecStart=/usr/bin/shellhook -config /etc/shellhook/config.yaml
+ExecStart=/usr/bin/shellhook -config /etc/shellhook/config.yaml 2>&1 | tee -a /var/log/shellhook.log 2>&1
 Restart=always
 
 [Install]
