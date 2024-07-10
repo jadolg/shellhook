@@ -18,13 +18,13 @@ type ClientError struct {
 
 func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		scriptToRun, cliErr := getScript(r.URL.Query().Get("script"), c)
-		if cliErr != nil {
-			http.Error(w, cliErr.Message, cliErr.HTTPCode)
+		scriptToRun, err := c.getScript(r.URL.Query().Get("script"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		cliErr = checkAuthorization(r.Header.Get("Authorization"), scriptToRun, c)
+		cliErr := checkAuthorization(r.Header.Get("Authorization"), scriptToRun, c)
 		if cliErr != nil {
 			http.Error(w, cliErr.Message, cliErr.HTTPCode)
 			return
@@ -86,22 +86,6 @@ func checkAuthorization(authHeader string, scriptToRun script, c configuration) 
 		return &ClientError{Message: "Invalid authorization token", HTTPCode: http.StatusUnauthorized}
 	}
 	return nil
-}
-
-func getScript(scriptUUID string, c configuration) (script, *ClientError) {
-	scriptID, err := uuid.Parse(scriptUUID)
-
-	if err != nil {
-		return script{}, &ClientError{Message: "Missing script parameter or invalid script parameter", HTTPCode: http.StatusBadRequest}
-	}
-
-	for _, ascript := range c.Scripts {
-		if ascript.ID == scriptID {
-			return ascript, nil
-		}
-	}
-
-	return script{}, &ClientError{Message: "Script not found", HTTPCode: http.StatusNotFound}
 }
 
 func healthcheckHandler(w http.ResponseWriter, _ *http.Request) {
