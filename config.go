@@ -53,3 +53,19 @@ func getConfig(configFile string) (configuration, error) {
 
 	return c, nil
 }
+
+func (c *configuration) getScript(scriptUUID string) (script, error) {
+	scriptID, err := uuid.Parse(scriptUUID)
+
+	if err != nil {
+		return script{}, fmt.Errorf("invalid script ID: %s", scriptUUID)
+	}
+
+	for _, script := range c.Scripts {
+		if script.ID == scriptID {
+			return script, nil
+		}
+	}
+
+	return script{}, fmt.Errorf("invalid script ID: %s", scriptUUID)
+}
