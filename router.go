@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -24,20 +25,30 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			return
 		}
 
+		remoteIP := getRemoteIP(r)
+
 		cliErr := checkAuthorization(r.Header.Get("Authorization"), scriptToRun, c)
 		if cliErr != nil {
+			log.WithFields(log.Fields{
+				"Error":  cliErr.Message,
+				"Client": remoteIP,
+			}).Warning("Authorization error")
 			http.Error(w, cliErr.Message, cliErr.HTTPCode)
 			return
 		}
 
-		if scriptToRun.Path != "" {
-			log.Infof("Executing script: %v with path: '%s'", scriptToRun.ID, scriptToRun.Path)
-		} else {
-			log.Infof("Executing script: %v with inline", scriptToRun.ID)
-		}
+		log.WithFields(log.Fields{
+			"ID":         scriptToRun.ID,
+			"Path":       scriptToRun.Path,
+			"Inline":     scriptToRun.Inline != "",
+			"Concurrent": scriptToRun.Concurrent,
+			"Shell":      scriptToRun.Shell,
+			"User":       scriptToRun.User,
+			"Client":     remoteIP,
+		}).Info("Executing script")
 
 		if !scriptToRun.Concurrent {
-			log.Debugf("Acquiring lock for script %v", scriptToRun.ID)
+			log.WithFields(log.Fields{"ID": scriptToRun.ID}).Debug("Acquiring lock for script")
 			locks[scriptToRun.ID].Lock()
 			defer locks[scriptToRun.ID].Unlock()
 		}
@@ -53,6 +64,18 @@ func executionHandler(c configuration, locks map[uuid.UUID]*sync.Mutex) func(w h
 			log.Errorf("error responding to request %v", err)
 		}
 	}
+}
+
+func getRemoteIP(r *http.Request) string {
+	clientIP := r.RemoteAddr
+	if forwardedFor := r.Header.Get("X-Forwarded-For"); forwardedFor != "" {
+		clientIP = forwardedFor
+	}
+	ip, _, splitErr := net.SplitHostPort(clientIP)
+	if splitErr == nil {
+		clientIP = ip
+	}
+	return clientIP
 }
 
 func reportError(err error, w http.ResponseWriter) {
