@@ -9,20 +9,40 @@ import (
 	"os"
 )
 
+var (
+	Version = "dev"
+	Commit  = "none"
+	Date    = "unknown"
+	BuiltBy = "dirty hands"
+)
+
 func main() {
 	var port int
 	var configFile, logLevel, certFile, keyFile string
+	var version bool
 
 	flag.IntVar(&port, "port", 9081, "Port to listen on")
 	flag.StringVar(&configFile, "config", "./config.yaml", "Path to config file (optional)")
 	flag.StringVar(&logLevel, "loglevel", "info", "Log level (debug, info, warn, error, fatal, panic)")
 	flag.StringVar(&certFile, "cert", "", "Path to TLS certificate file (optional)")
 	flag.StringVar(&keyFile, "key", "", "Path to TLS key file (optional)")
+	flag.BoolVar(&version, "version", false, "prints version and exits")
 	flag.Parse()
 
 	err := configureLogs(logLevel)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	log.WithFields(log.Fields{
+		"Version": Version,
+		"Commit":  Commit,
+		"Date":    Date,
+		"BuiltBy": BuiltBy,
+	}).Info("Application version information")
+
+	if version {
+		return
 	}
 
 	c, err := getConfig(configFile)
