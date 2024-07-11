@@ -36,12 +36,18 @@ func main() {
 
 	router := getRouter(c)
 	if certFile != "" && keyFile != "" {
-		log.Printf("Starting TLS server on port %d", port)
+		log.WithFields(log.Fields{
+			"port": port,
+			"cert": certFile,
+			"key":  keyFile,
+		}).Info("Starting TLS server")
 		if err := http.ListenAndServeTLS(fmt.Sprintf(":%d", port), certFile, keyFile, router); err != nil {
 			log.Fatalf("Error starting TLS server: %v", err)
 		}
 	} else {
-		log.Printf("Starting server on port %d", port)
+		log.WithFields(log.Fields{
+			"port": port,
+		}).Info("Starting server")
 		if err := http.ListenAndServe(fmt.Sprintf(":%d", port), router); err != nil {
 			log.Fatalf("Error starting server: %v", err)
 		}
