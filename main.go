@@ -11,28 +11,40 @@ import (
 
 func main() {
 	var port int
-	var configFile string
-	var logLevel string
+	var configFile, logLevel, certFile, keyFile string
 
 	flag.IntVar(&port, "port", 9081, "Port to listen on")
-	flag.StringVar(&configFile, "config", "./config.yaml", "Path to config file")
-	flag.StringVar(&logLevel, "loglevel", "info", "Log level")
+	flag.StringVar(&configFile, "config", "./config.yaml", "Path to config file (optional)")
+	flag.StringVar(&logLevel, "loglevel", "info", "Log level (debug, info, warn, error, fatal, panic)")
+	flag.StringVar(&certFile, "cert", "", "Path to TLS certificate file (optional)")
+	flag.StringVar(&keyFile, "key", "", "Path to TLS key file (optional)")
 	flag.Parse()
+
+	err := configureLogs(logLevel)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	c, err := getConfig(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = configureLogs(logLevel)
-	if err != nil {
-		log.Fatal(err)
+	if (certFile == "" && keyFile != "") || (certFile != "" && keyFile == "") {
+		log.Fatal("Both cert and key must be provided together or left empty.")
 	}
 
 	router := getRouter(c)
-	log.Printf("Starting server on port %d", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), router); err != nil {
-		log.Fatalf("Error starting server: %v", err)
+	if certFile != "" && keyFile != "" {
+		log.Printf("Starting TLS server on port %d", port)
+		if err := http.ListenAndServeTLS(fmt.Sprintf(":%d", port), certFile, keyFile, router); err != nil {
+			log.Fatalf("Error starting TLS server: %v", err)
+		}
+	} else {
+		log.Printf("Starting server on port %d", port)
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", port), router); err != nil {
+			log.Fatalf("Error starting server: %v", err)
+		}
 	}
 }
 
