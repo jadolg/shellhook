@@ -57,3 +57,119 @@ nfpms:
         dst: /etc/systemd/system/shellhook.service
         file_info:
           mode: 0600
+
+dockers:
+  - id: shellhook-debian-amd64
+    dockerfile: debian.Dockerfile
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:debian-latest-amd64"
+      - "ghcr.io/jadolg/shellhook:debian-{{ .Tag }}-amd64"
+      - "ghcr.io/jadolg/shellhook:debian-v{{ .Major }}.{{ .Minor }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+
+  - id: shellhook-debian-arm64
+    dockerfile: debian.Dockerfile
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:debian-latest-arm64"
+      - "ghcr.io/jadolg/shellhook:debian-{{ .Tag }}-arm64"
+      - "ghcr.io/jadolg/shellhook:debian-v{{ .Major }}.{{ .Minor }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+
+  - id: shellhook-ubuntu-amd64
+    dockerfile: ubuntu.Dockerfile
+    use: buildx
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:ubuntu-latest-amd64"
+      - "ghcr.io/jadolg/shellhook:ubuntu-{{ .Tag }}-amd64"
+      - "ghcr.io/jadolg/shellhook:ubuntu-v{{ .Major }}.{{ .Minor }}-amd64"
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+
+  - id: shellhook-ubuntu-arm64
+    dockerfile: ubuntu.Dockerfile
+    goarch: arm64
+    use: buildx
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:ubuntu-latest-arm64"
+      - "ghcr.io/jadolg/shellhook:ubuntu-{{ .Tag }}-arm64"
+      - "ghcr.io/jadolg/shellhook:ubuntu-v{{ .Major }}.{{ .Minor }}-arm64"
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+
+  - id: shellhook-alpine-amd64
+    dockerfile: alpine.Dockerfile
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:alpine-latest-amd64"
+      - "ghcr.io/jadolg/shellhook:alpine-{{ .Tag }}-amd64"
+      - "ghcr.io/jadolg/shellhook:alpine-v{{ .Major }}.{{ .Minor }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+
+  - id: shellhook-alpine-arm64
+    dockerfile: alpine.Dockerfile
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:alpine-latest-arm64"
+      - "ghcr.io/jadolg/shellhook:alpine-{{ .Tag }}-arm64"
+      - "ghcr.io/jadolg/shellhook:alpine-v{{ .Major }}.{{ .Minor }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+
+docker_manifests:
+  - name_template: "ghcr.io/jadolg/shellhook:debian-latest"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:debian-latest-amd64"
+      - "ghcr.io/jadolg/shellhook:debian-latest-arm64"
+
+  - name_template: "ghcr.io/jadolg/shellhook:debian-{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:debian-{{ .Tag }}-amd64"
+      - "ghcr.io/jadolg/shellhook:debian-{{ .Tag }}-arm64"
+
+  - name_template: "ghcr.io/jadolg/shellhook:debian-v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:debian-v{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/jadolg/shellhook:debian-v{{ .Major }}.{{ .Minor }}-arm64"
+        
+  - name_template: "ghcr.io/jadolg/shellhook:ubuntu-latest"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:ubuntu-latest-amd64"
+      - "ghcr.io/jadolg/shellhook:ubuntu-latest-arm64"
+
+  - name_template: "ghcr.io/jadolg/shellhook:ubuntu-{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:ubuntu-{{ .Tag }}-amd64"
+      - "ghcr.io/jadolg/shellhook:ubuntu-{{ .Tag }}-arm64"
+
+  - name_template: "ghcr.io/jadolg/shellhook:ubuntu-v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:ubuntu-v{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/jadolg/shellhook:ubuntu-v{{ .Major }}.{{ .Minor }}-arm64"
+
+  - name_template: "ghcr.io/jadolg/shellhook:alpine-latest"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:alpine-latest-amd64"
+      - "ghcr.io/jadolg/shellhook:alpine-latest-arm64"
+
+  - name_template: "ghcr.io/jadolg/shellhook:alpine-{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:alpine-{{ .Tag }}-amd64"
+      - "ghcr.io/jadolg/shellhook:alpine-{{ .Tag }}-arm64"
+
+  - name_template: "ghcr.io/jadolg/shellhook:alpine-v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/jadolg/shellhook:alpine-v{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/jadolg/shellhook:alpine-v{{ .Major }}.{{ .Minor }}-arm64"
