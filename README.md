@@ -21,7 +21,7 @@ or
 Download the binary from releases and make your own setup
 
 ## Configure
-We use a yaml configuration file and it's read by default from `./config.yaml`
+We use a yaml configuration file and it's read by default from `./config.yaml` (/etc/shellhook/config.yaml if you are using the **.deb** installation)
 
 ```yaml
 default_token: KXjk9waX9fqRLQ4t8sQf5IK94e2u1CXr8X4MscDc # Token used for all scripts that don't specify one
