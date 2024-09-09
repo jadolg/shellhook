@@ -20,6 +20,16 @@ or
 
 Download the binary from releases and make your own setup
 
+## Docker
+
+You can also use shellhook from Docker. We ship images based in alpine, debian, and ubuntu.
+See https://github.com/jadolg/shellhook/pkgs/container/shellhook
+
+```bash
+docker run -v $PWD/config.yaml:/config.yaml -p 9081:9081 --name shellhook -d ghcr.io/jadolg/shellhook:alpine-0.10.3
+```
+
+
 ## Configure
 We use a yaml configuration file and it's read by default from `./config.yaml` (/etc/shellhook/config.yaml if you are using the **.deb** installation)
 
