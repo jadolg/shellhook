@@ -1,23 +1,24 @@
-default_token: KXjk9waX9fqRLQ4t8sQf5IK94e2u1CXr8X4MscDc
+default_token: KXjk9waX9fqRLQ4t8sQf5IK94e2u1CXr8X4MscDc # Token used for all scripts that don't specify one
 
-environment:
+environment: # Global environment variables
   - key: TITLE
     value: Mr.
 
 scripts:
-  - id: 5e5adb92-0d04-11ee-97cf-4b6c30e50f6a
-    path: ./scripts/success.sh
+  - id: 5e5adb92-0d04-11ee-97cf-4b6c30e50f6a # ID of the script (a UUID
+    path: ./scripts/success.sh # Path to the script
+    user: akiel # If specified, the script is run using this user
   - id: c7c664c0-0d0e-11ee-a3c9-17023c4d78f3
     path: ./scripts/failure.sh
-    token: YT9U08gqQ8yxa0Sk3PnDk6jpWu31bCyqa5SRQVFV8
-    concurrent: true
+    token: YT9U08gqQ8yxa0Sk3PnDk6jpWu31bCyqa5SRQVFV8 # If specified, this token is used for authorization instead of the default one
+    concurrent: true # Set this to true if your script can run concurrently (default: false)
   - id: 47878e38-a700-11ee-bc6d-f3d25921fcde
-    inline: |
+    inline: |  # Use an inline script instead of a path to a script
       echo "Hello, world!"
   - id: 34ca006a-ece6-11ee-a395-17c174ecf4c7
-    shell: /bin/sh
+    shell: /bin/sh # This script will run using this speciffic shell (default: /bin/bash)
     inline: |
       echo "Hello, $TITLE $NAME!"
-    environment:
+    environment: # Local environment variables
       - key: NAME
         value: Frodo
