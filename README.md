@@ -52,6 +52,7 @@ scripts:
     inline: | # Use an inline script instead of a path to a script
       echo "Hello, world!"
   - id: 34ca006a-ece6-11ee-a395-17c174ecf4c7
+    shell: /bin/sh
     inline: |
       echo "Hello, $TITLE $NAME!"
     environment: # Environment variables to pass to the script
