@@ -33,32 +33,7 @@ docker run -v $PWD/config.yaml:/config.yaml -p 9081:9081 --name shellhook -d ghc
 ## Configure
 We use a yaml configuration file and it's read by default from `./config.yaml` (/etc/shellhook/config.yaml if you are using the **.deb** installation)
 
-```yaml
-default_token: KXjk9waX9fqRLQ4t8sQf5IK94e2u1CXr8X4MscDc # Token used for all scripts that don't specify one
-
-environment:
-  - key: TITLE
-    value: Mr.
-
-scripts:
-  - id: 5e5adb92-0d04-11ee-97cf-4b6c30e50f6a # ID of the script (a UUID)
-    path: ./scripts/success.sh # Path to the script
-    user: akiel # If specified, the script is run using this user
-  - id: c7c664c0-0d0e-11ee-a3c9-17023c4d78f3
-    path: ./scripts/failure.sh
-    token: YT9U08gqQ8yxa0Sk3PnDk6jpWu31bCyqa5SRQVFV8 # If specified, this token is used for authorization instead of the default one
-    concurrent: true # Set this to true if your script can run concurrently (default: false)
-  - id: 47878e38-a700-11ee-bc6d-f3d25921fcde
-    inline: | # Use an inline script instead of a path to a script
-      echo "Hello, world!"
-  - id: 34ca006a-ece6-11ee-a395-17c174ecf4c7
-    shell: /bin/sh
-    inline: |
-      echo "Hello, $TITLE $NAME!"
-    environment: # Environment variables to pass to the script
-      - key: NAME
-        value: Frodo
-```
+See <https://github.com/jadolg/shellhook/blob/main/config.yaml> for a full example
 
 ## Calling the service
 
