@@ -27,3 +27,24 @@ func TestConfigurationFailsOnInvalidScript(t *testing.T) {
 	_, err := getConfig("bad_config.yaml")
 	require.Error(t, err)
 }
+
+func TestConfigurationFailsOnMissingFile(t *testing.T) {
+	_, err := getConfig("missing.yaml")
+	require.Error(t, err)
+}
+
+func TestGetScript(t *testing.T) {
+	c, err := getConfig("config.yaml")
+	require.NoError(t, err)
+	script, err := c.getScript("5e5adb92-0d04-11ee-97cf-4b6c30e50f6a")
+	assert.NoError(t, err)
+	assert.Equal(t, "5e5adb92-0d04-11ee-97cf-4b6c30e50f6a", script.ID.String())
+
+	_, err = c.getScript("5e5adb92-0d04-11ee-97cf-4b6c30e50f6b;/bin/bash")
+	assert.Error(t, err)
+	assert.Equal(t, "invalid script ID: 5e5adb92-0d04-11ee-97cf-4b6c30e50f6b;/bin/bash", err.Error())
+
+	_, err = c.getScript("")
+	assert.Error(t, err)
+	assert.Equal(t, "invalid script ID: ", err.Error())
+}
