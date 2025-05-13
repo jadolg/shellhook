@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"os/user"
 	"strconv"
 	"strings"
 	"syscall"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func executeScript(scriptToRun script, globalEnvironment []environment) ([]byte, error) {
@@ -77,7 +79,7 @@ func getShell(scriptToRun script) string {
 	if shell == "" {
 		shellFromEnv, exists := os.LookupEnv("SHELL")
 		if !exists {
-			shell = "/bin/bash"
+			shell = detectDefaultShell(scriptToRun.User, "/etc/passwd")
 		} else {
 			shell = shellFromEnv
 		}
@@ -119,4 +121,27 @@ func injectUserInCmd(username string, cmd *exec.Cmd) error {
 	cmd.Env = append(cmd.Env, envForUser...)
 	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid), Groups: groupIDs}
 	return nil
+}
+
+func detectDefaultShell(user, etcpasswdPath string) string {
+	file, err := os.Open(etcpasswdPath)
+	if err != nil {
+		log.Fatalf("Failed to open %s: %v", etcpasswdPath, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Split(line, ":")
+		if len(fields) >= 7 && fields[0] == user {
+			return fields[6]
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading %s: %v", etcpasswdPath, err)
+	}
+
+	return "/bin/bash"
 }
