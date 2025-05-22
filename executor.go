@@ -62,6 +62,19 @@ func injectEnvironmentVariables(scriptEnvironment []environment, globalEnvironme
 	}
 }
 
+func getUser(scriptToRun script) string {
+	if scriptToRun.User != "" {
+		return scriptToRun.User
+	}
+
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Errorf("Error fetching current user: %v. Using default (root)", err)
+		return "root"
+	}
+	return currentUser.Username
+}
+
 func getEnvironmentVariables(username string) ([]string, error) {
 	cmd := exec.Command("sudo", "-Hiu", username, "env")
 
@@ -79,7 +92,8 @@ func getShell(scriptToRun script) string {
 	if shell == "" {
 		shellFromEnv, exists := os.LookupEnv("SHELL")
 		if !exists {
-			shell = detectDefaultShell(scriptToRun.User, "/etc/passwd")
+			username := getUser(scriptToRun)
+			shell = detectDefaultShell(username, "/etc/passwd")
 		} else {
 			shell = shellFromEnv
 		}
