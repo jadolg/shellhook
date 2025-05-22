@@ -46,7 +46,7 @@ func executeScript(scriptToRun script, globalEnvironment []environment) ([]byte,
 	output, err := cmd.Output()
 	execsTotal.Inc()
 	if err != nil {
-		return nil, fmt.Errorf("%s\n%s\n%v", output, err.(*exec.ExitError).Stderr, err)
+		return nil, fmt.Errorf("%s%v", output, err)
 	}
 	log.WithFields(log.Fields{"output": string(output), "script": scriptPath}).Debug("Script output")
 	return output, nil
