@@ -26,7 +26,7 @@ You can also use shellhook from Docker. We ship images based in alpine, debian, 
 See https://github.com/jadolg/shellhook/pkgs/container/shellhook
 
 ```bash
-docker run -v $PWD/config.yaml:/config.yaml -p 9081:9081 --name shellhook -d ghcr.io/jadolg/shellhook:alpine-0.10.3
+docker run -v $PWD/config.yaml:/config.yaml -p 9081:9081 --name shellhook -d ghcr.io/jadolg/shellhook:ubuntu-0.10.3
 ```
 
 
