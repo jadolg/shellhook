@@ -7,7 +7,7 @@ Run scripts remotely with a simple HTTP call
 Install from my private repository
 
 ```bash
-wget -O - https://deb.akiel.dev/gpg.pub.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/akiel.gpg
+wget -O - https://deb.akiel.dev/gpg.pub.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/akiel.gpg > /dev/null
 sudo apt-add-repository deb "https://deb.akiel.dev/ all main"
 sudo apt install shellhook
 ```
