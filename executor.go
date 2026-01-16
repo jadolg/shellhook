@@ -52,8 +52,8 @@ func executeScript(scriptToRun script, globalEnvironment []environment) ([]byte,
 	if err != nil {
 		return nil, fmt.Errorf("%s%v", output, err)
 	}
-	log.WithFields(log.Fields{"output": string(output), "script": scriptPath, "duration": duration.String()}).Debug("Script output")
-	log.WithFields(log.Fields{"script": scriptPath, "duration": duration.String()}).Info("Script executed")
+	log.WithFields(log.Fields{"output": string(output), "script": scriptPath, "duration": duration.String(), "script_id": scriptToRun.ID.String()}).Debug("Script output")
+	log.WithFields(log.Fields{"script": scriptPath, "duration": duration.String(), "script_id": scriptToRun.ID.String()}).Info("Script executed")
 	return output, nil
 }
 
