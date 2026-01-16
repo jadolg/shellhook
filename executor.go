@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -43,12 +44,16 @@ func executeScript(scriptToRun script, globalEnvironment []environment) ([]byte,
 
 	injectEnvironmentVariables(scriptToRun.Environment, globalEnvironment, cmd)
 
+	startTime := time.Now()
 	output, err := cmd.Output()
+	duration := time.Since(startTime)
 	execsTotal.Inc()
+	execDuration.WithLabelValues(scriptToRun.ID.String()).Observe(duration.Seconds())
 	if err != nil {
 		return nil, fmt.Errorf("%s%v", output, err)
 	}
-	log.WithFields(log.Fields{"output": string(output), "script": scriptPath}).Debug("Script output")
+	log.WithFields(log.Fields{"output": string(output), "script": scriptPath, "duration": duration.String(), "script_id": scriptToRun.ID.String()}).Debug("Script output")
+	log.WithFields(log.Fields{"script": scriptPath, "duration": duration.String(), "script_id": scriptToRun.ID.String()}).Info("Script executed")
 	return output, nil
 }
 
