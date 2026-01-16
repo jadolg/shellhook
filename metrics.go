@@ -14,4 +14,9 @@ var (
 		Name: "shellhook_execs_total",
 		Help: "The total number of calls to exec",
 	})
+	execDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "shellhook_exec_duration_seconds",
+		Help:    "Script execution duration in seconds",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"script"})
 )
